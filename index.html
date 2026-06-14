@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUIOT - Smart Freezer Dashboard</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. CSS VARIABLES (HỆ MÀU & THÔNG SỐ)
+           ========================================================================== */
+        :root {
+            --bg-body: #f4f7f6;
+            --bg-card: #ffffff;
+            --bg-navbar: #ffffff;
+            
+            --primary: #0284c7;       /* Xanh thương hiệu TUIOT */
+            --primary-hover: #0369a1;
+            
+            --text-main: #1e293b;     /* Chữ tiêu đề đậm */
+            --text-body: #334155;     /* Chữ nội dung */
+            --text-muted: #64748b;    /* Chữ phụ trợ */
+            
+            --border-color: #e2e8f0;
+            --border-radius-lg: 20px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            
+            /* Màu sắc cảm biến */
+            --color-temp: #f97316;
+            --color-hum: #0ea5e9;
+            --color-safe: #10b981;
+            --color-danger: #ef4444;
+            --color-warning: #f59e0b;
+        }
+
+        /* ==========================================================================
+           2. RESET & BASE STYLES
+           ========================================================================== */
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-body); 
+            font-family: 'Inter', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==========================================================================
+           3. NAVBAR & HEADER
+           ========================================================================== */
+        .navbar {
+            background-color: var(--bg-navbar);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--primary) !important;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .clock-display {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .connection-badge {
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .conn-offline {
+            background-color: #fee2e2;
+            color: var(--color-danger);
+        }
+
+        .conn-online {
+            background-color: #d1fae5;
+            color: var(--color-safe);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .conn-offline .status-dot { background-color: var(--color-danger); }
+        .conn-online .status-dot { 
+            background-color: var(--color-safe); 
+            box-shadow: 0 0 8px var(--color-safe);
+            animation: pulse-dot 2s infinite;
+        }
+
+        /* ==========================================================================
+           4. CARD UI (THẺ NỘI DUNG)
+           ========================================================================== */
+        .card { 
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: var(--border-radius-lg); 
+            box-shadow: var(--shadow-md); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+            overflow: hidden;
+        }
+
+        .card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header { 
+            background-color: transparent;
+            border-bottom: 1px solid var(--border-color); 
+            font-weight: 700; 
+            font-size: 1.1rem;
+            color: var(--text-main);
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Thẻ hiển thị Sensor */
+        .sensor-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .sensor-icon-wrapper {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .temp-wrapper { background-color: #fff7ed; color: var(--color-temp); }
+        .hum-wrapper { background-color: #f0f9ff; color: var(--color-hum); }
+        .gas-wrapper { background-color: #ecfdf5; color: var(--color-safe); transition: all 0.3s; }
+        .gas-wrapper.danger { background-color: #fef2f2; color: var(--color-danger); }
+
+        .sensor-title {
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .sensor-value {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        /* ==========================================================================
+           5. CONTROLS & FORMS
+           ========================================================================== */
+        .control-section {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .control-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Nút Segmented Control Custom (Auto / Manual) */
+        .segmented-control {
+            display: flex;
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            padding: 4px;
+            position: relative;
+        }
+
+        .segmented-control input[type="radio"] {
+            display: none;
+        }
+
+        .segmented-control label {
+            flex: 1;
+            text-align: center;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+            z-index: 2;
+        }
+
+        .segmented-control input[type="radio"]:checked + label {
+            background-color: var(--bg-card);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Nhóm nút bấm */
+        .btn-custom {
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius-sm);
+            transition: all 0.2s;
+        }
+        
+        .btn-custom:active {
+            transform: scale(0.97);
+        }
+
+        /* Input Custom */
+        .input-group-text {
+            background-color: #f1f5f9;
+            border-color: var(--border-color);
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            border-color: var(--border-color);
+            padding: 0.6rem 1rem;
+            font-weight: 500;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        /* ==========================================================================
+           6. HIỆU ỨNG & MAP
+           ========================================================================== */
+        #map { 
+            height: 450px; 
+            border-radius: var(--border-radius-md); 
+            z-index: 1; 
+            border: 1px solid var(--border-color);
+        }
+
+        .fan-on-glow {
+            color: var(--color-safe);
+            filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+            animation: spin-fan 1.5s linear infinite;
+        }
+
+        @keyframes spin-fan {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .gas-blinking {
+            animation: text-blink 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes text-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ==========================================================================
+           7. FOOTER
+           ========================================================================== */
+        footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="#">
+                <i class="fa-solid fa-snowflake text-primary"></i>
+                TUIOT <span class="text-muted fw-light">| System</span>
+            </a>
+            
+            <div class="nav-status">
+                <div class="clock-display d-none d-md-block">
+                    <i class="fa-regular fa-clock me-1"></i> <span id="realtimeClock">00:00:00</span>
+                </div>
+                <div class="connection-badge conn-offline" id="mqttStatusBadge">
+                    <span class="status-dot"></span>
+                    <span id="mqttStatusText">Đang kết nối...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container flex-grow-1">
+        
+        <div class="row mb-4">
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="sensor-card">
+                        <div class="sensor-icon-wrapper temp-wrapper">
+                            <i class="fa-solid fa-temperature-half"></i>
+                        </div>
+                        <div class="sensor-title">Nhiệt độ hiện tại</div>
+                        <div class="sensor-value" style="color: var(--color-temp);">
+                            <span id="tempVal">--</span><span style="font-size: 1.5rem;">°C</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="sensor-card">
+                        <div class="sensor-icon-wrapper hum-wrapper">
+                            <i class="fa-solid fa-droplet"></i>
+                        </div>
+                        <div class="sensor-title">Độ ẩm không khí</div>
+                        <div class="sensor-value" style="color: var(--color-hum);">
+                            <span id="humVal">--</span><span style="font-size: 1.5rem;">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-12 mb-3">
+                <div class="card h-100">
+                    <div class="sensor-card">
+                        <div class="sensor-icon-wrapper gas-wrapper" id="gasIconWrapper">
+                            <i class="fa-solid fa-wind" id="gasIcon"></i>
+                        </div>
+                        <div class="sensor-title">Trạng thái rò rỉ khí</div>
+                        <div class="sensor-value" style="color: var(--color-safe);" id="gasVal">
+                            An Toàn
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            
+            <div class="col-lg-5 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fa-solid fa-sliders text-primary"></i> Trung Tâm Điều Khiển
+                    </div>
+                    <div class="card-body">
+                        
+                        <div class="control-section">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="control-label mb-0">
+                                    <i class="fa-solid fa-fan" id="fanIconSpin"></i> Hệ Thống Quạt
+                                </div>
+                                <span class="badge bg-secondary" id="fanActualStatus">TRẠNG THÁI: TẮT</span>
+                            </div>
+                            
+                            <div class="segmented-control mb-3">
+                                <input type="radio" name="fanMode" id="modeAuto" checked onchange="setFanMode('AUTO')">
+                                <label for="modeAuto">Tự Động Bật/Tắt</label>
+                                
+                                <input type="radio" name="fanMode" id="modeManual" onchange="setFanMode('MANUAL')">
+                                <label for="modeManual">Thủ Công</label>
+                            </div>
+
+                            <div class="d-flex gap-2" id="manualFanControls" style="opacity: 0.4; pointer-events: none;">
+                                <button class="btn btn-outline-success btn-custom flex-grow-1" onclick="controlFan('ON')">
+                                    <i class="fa-solid fa-play me-1"></i> ÉP BẬT
+                                </button>
+                                <button class="btn btn-outline-danger btn-custom flex-grow-1" onclick="controlFan('OFF')">
+                                    <i class="fa-solid fa-stop me-1"></i> ÉP TẮT
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="control-section">
+                            <div class="control-label">
+                                <i class="fa-solid fa-bell"></i> Ngưỡng Báo Động (°C)
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-temperature-arrow-up"></i></span>
+                                <input type="number" id="inputThreshold" class="form-control" placeholder="Nhập nhiệt độ..." value="20">
+                                <button class="btn btn-primary btn-custom" onclick="updateThreshold()">LƯU LẠI</button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">Hệ thống sẽ gọi điện nếu nhiệt độ vượt mức này.</small>
+                        </div>
+
+                        <div class="control-section">
+                            <div class="control-label">
+                                <i class="fa-solid fa-address-book"></i> Số Điện Thoại Cảnh Báo
+                            </div>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+                                <input type="text" id="inputPhone" class="form-control" placeholder="+84...">
+                                <button class="btn btn-info text-white btn-custom" onclick="updatePhone()">CẬP NHẬT</button>
+                            </div>
+                            
+                            <button class="btn btn-warning w-100 btn-custom text-dark" onclick="triggerTestCall()">
+                                <i class="fa-solid fa-phone-volume me-2"></i> THỰC HIỆN TEST GỌI ĐIỆN (SIM)
+                            </button>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <i class="fa-solid fa-location-crosshairs text-primary"></i> Bản Đồ Định Vị (GPS)
+                    </div>
+                    <div class="card-body p-3">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p class="mb-0">©  Designed for Smart Freezer Monitoring.</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        /** * A. QUẢN LÝ ĐỒNG HỒ THỜI GIAN THỰC (REALTIME CLOCK) 
+         */
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('vi-VN', { hour12: false });
+            const dateString = now.toLocaleDateString('vi-VN');
+            document.getElementById('realtimeClock').innerText = `${timeString} - ${dateString}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        /** * B. CẤU HÌNH BẢN ĐỒ LEAFLET (LIGHT THEME)
+         */
+        const map = L.map('map').setView([10.8231, 106.6297], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { 
+            attribution: '© OpenStreetMap & CARTO' 
+        }).addTo(map);
+        
+        // Tạo Icon vị trí màu đỏ nổi bật
+        const customIcon = L.divIcon({ 
+            html: '<i class="fa-solid fa-location-dot fa-2x" style="color: var(--color-danger); filter: drop-shadow(0px 4px 4px rgba(0,0,0,0.3));"></i>', 
+            className: 'custom-div-icon', 
+            iconSize: [30, 42], 
+            iconAnchor: [15, 42] 
+        });
+        const marker = L.marker([10.8231, 106.6297], {icon: customIcon}).addTo(map);
+
+        /** * C. CẤU HÌNH VÀ KẾT NỐI MQTT
+         */
+        const clientId = 'TUIOT_Web_' + Math.random().toString(16).substr(2, 8);
+        const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+        const client = mqtt.connect(brokerUrl, { clientId: clientId });
+        const prefix = "tuiot/freezer/";
+
+        // Lấy các element để thay đổi UI nhanh
+        const elMqttBadge = document.getElementById('mqttStatusBadge');
+        const elMqttText = document.getElementById('mqttStatusText');
+
+        // 1. Sự kiện khi kết nối thành công
+        client.on('connect', function () {
+            console.log('Connected to MQTT via WebSockets');
+            
+            // Cập nhật UI Trạng thái
+            elMqttBadge.className = 'connection-badge conn-online';
+            elMqttText.innerText = 'Đã Kết Nối';
+
+            // Đăng ký các Topic
+            const topics = ['temperature', 'humidity', 'gas', 'gps', 'alert', 'fan_status'];
+            topics.forEach(t => client.subscribe(prefix + t));
+            
+            Swal.fire({
+                toast: true, position: 'top-end', icon: 'success',
+                title: 'Hệ thống đã sẵn sàng', showConfirmButton: false, timer: 2000
+            });
+        });
+
+        // 2. Sự kiện khi mất kết nối
+        client.on('offline', function() {
+            elMqttBadge.className = 'connection-badge conn-offline';
+            elMqttText.innerText = 'Mất Kết Nối';
+        });
+
+        // 3. Xử lý dữ liệu nhận được (Incoming Messages)
+        client.on('message', function (topic, message) {
+            let msg = message.toString();
+            
+            // Cập nhật Nhiệt độ
+            if (topic === prefix + 'temperature') {
+                document.getElementById('tempVal').innerText = msg;
+            } 
+            // Cập nhật Độ ẩm
+            else if (topic === prefix + 'humidity') {
+                document.getElementById('humVal').innerText = msg;
+            } 
+            // Cập nhật Cảm biến Gas
+            else if (topic === prefix + 'gas') {
+                updateGasUI(msg);
+            } 
+            // Cập nhật GPS
+            else if (topic === prefix + 'gps') {
+                updateMapGPS(msg);
+            }
+            // Xử lý Cảnh báo khẩn
+            else if (topic === prefix + 'alert') {
+                Swal.fire('Cảnh Báo Hệ Thống', msg, 'warning');
+            }
+            // Trạng thái quạt thực tế từ ESP32
+            else if (topic === prefix + 'fan_status') {
+                updateFanUI(msg);
+            }
+        });
+
+        /** * D. CÁC HÀM XỬ LÝ CẬP NHẬT GIAO DIỆN (UI UPDATERS)
+         */
+        
+        function updateGasUI(status) {
+            const gasUI = document.getElementById('gasVal');
+            const gasIconWrapper = document.getElementById('gasIconWrapper');
+            const gasIcon = document.getElementById('gasIcon');
+
+            if (status === "1") {
+                // Rò rỉ khí
+                gasUI.innerText = "NGUY HIỂM!"; 
+                gasUI.style.color = "var(--color-danger)";
+                gasUI.classList.add("gas-blinking");
+                
+                gasIconWrapper.classList.add("danger");
+                gasIcon.className = "fa-solid fa-triangle-exclamation";
+            } else {
+                // An toàn
+                gasUI.innerText = "An Toàn"; 
+                gasUI.style.color = "var(--color-safe)";
+                gasUI.classList.remove("gas-blinking");
+                
+                gasIconWrapper.classList.remove("danger");
+                gasIcon.className = "fa-solid fa-wind";
+            }
+        }
+
+        function updateMapGPS(coordString) {
+            let coords = coordString.split(',');
+            if(coords.length === 2) {
+                let lat = parseFloat(coords[0]);
+                let lon = parseFloat(coords[1]);
+                map.setView([lat, lon], 16); 
+                marker.setLatLng([lat, lon]);
+            }
+        }
+
+        function updateFanUI(status) {
+            const fanBadge = document.getElementById('fanActualStatus');
+            const fanIcon = document.getElementById('fanIconSpin');
+            
+            if (status === "ON") {
+                fanBadge.innerText = "TRẠNG THÁI: ĐANG QUAY";
+                fanBadge.className = "badge bg-success";
+                fanIcon.classList.add("fan-on-glow");
+            } else {
+                fanBadge.innerText = "TRẠNG THÁI: TẮT";
+                fanBadge.className = "badge bg-secondary";
+                fanIcon.classList.remove("fan-on-glow");
+            }
+        }
+
+        /** * E. CÁC HÀM GỬI LỆNH ĐIỀU KHIỂN XUỐNG ESP32 (PUBLISH)
+         */
+
+        // 1. Chuyển đổi chế độ Quạt (Auto/Manual)
+        function setFanMode(mode) {
+            const manualBox = document.getElementById('manualFanControls');
+            
+            if(mode === 'AUTO') {
+                // Làm mờ và khóa khối nút thủ công
+                manualBox.style.opacity = '0.4';
+                manualBox.style.pointerEvents = 'none';
+            } else {
+                // Hiện rõ và mở khóa
+                manualBox.style.opacity = '1';
+                manualBox.style.pointerEvents = 'auto';
+            }
+            
+            // Gửi lệnh qua MQTT
+            client.publish(prefix + 'fan_mode', mode);
+        }
+
+        // 2. Ép bật/tắt quạt (Chỉ tác dụng khi ở chế độ Manual)
+        function controlFan(state) {
+            client.publish(prefix + 'fan_ctrl', state);
+        }
+
+        // 3. Cập nhật Ngưỡng Nhiệt Độ
+        function updateThreshold() {
+            let val = document.getElementById('inputThreshold').value;
+            if(val) { 
+                client.publish(prefix + 'threshold', val); 
+                Swal.fire({
+                    title: 'Lưu Thành Công!', 
+                    text: `Hệ thống sẽ báo động nếu nhiệt độ vượt ${val}°C`, 
+                    icon: 'success',
+                    confirmButtonColor: 'var(--primary)'
+                }); 
+            }
+        }
+
+        // 4. Cập nhật Số điện thoại
+        function updatePhone() {
+            let phone = document.getElementById('inputPhone').value.trim();
+            // Regex kiểm tra định dạng SĐT quốc tế cơ bản
+            if(/^\+?[0-9]{10,15}$/.test(phone)) {
+                if(!phone.startsWith('+')) phone = '+' + phone;
+                
+                client.publish(prefix + 'phone', phone);
+                Swal.fire({
+                    title: 'Đã Lưu SĐT!', 
+                    text: `Thiết bị sẽ gọi vào số ${phone} khi có sự cố.`, 
+                    icon: 'success',
+                    confirmButtonColor: 'var(--primary)'
+                });
+            } else {
+                Swal.fire('Định dạng sai', 'Vui lòng nhập số hợp lệ (VD: +84938718925)', 'error');
+            }
+        }
+
+        // 5. Test tính năng gọi điện của SIM
+        function triggerTestCall() {
+            Swal.fire({ 
+                title: 'Thực Hiện Test Gọi Điện?', 
+                text: "Mạch ESP32 sẽ kích hoạt module SIM gọi vào số điện thoại bạn đã lưu. Đảm bảo SIM còn tiền.", 
+                icon: 'question', 
+                showCancelButton: true, 
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fa-solid fa-phone"></i> Gọi Ngay', 
+                cancelButtonText: 'Đóng' 
+            }).then((result) => { 
+                if (result.isConfirmed) {
+                    client.publish(prefix + 'test_call', 'CALL'); 
+                    Swal.fire('Đã Gửi Lệnh', 'Vui lòng chú ý điện thoại của bạn trong ít giây tới.', 'success');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
