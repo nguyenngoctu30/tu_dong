@@ -323,8 +323,33 @@
         }
 
         /* ==========================================================================
-           7. FOOTER
+           7. FOOTER & HƯỚNG DẪN
            ========================================================================== */
+        .instruction-step {
+            position: relative;
+            padding: 1.5rem;
+            border-radius: var(--border-radius-md);
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            height: 100%;
+        }
+        
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            width: 32px;
+            height: 32px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: var(--shadow-sm);
+        }
+
         footer {
             margin-top: auto;
             padding: 2rem 0;
@@ -480,11 +505,150 @@
             </div>
             
         </div>
-    </div>
+
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm" style="background-color: transparent;">
+                    <div class="card-header border-0 bg-transparent mb-2" style="padding-left: 0;">
+                        <h5 class="fw-bold text-main mb-0"><i class="fa-solid fa-network-wired text-primary me-2"></i>Hướng Dẫn: Luồng Truyền Dữ Liệu ESP32 & Giao Diện</h5>
+                    </div>
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="instruction-step text-center">
+                                <div class="step-number">1</div>
+                                <i class="fa-solid fa-microchip fa-2x text-secondary mb-3 mt-2"></i>
+                                <h6 class="fw-bold">Đọc Cảm Biến</h6>
+                                <p class="text-muted small mb-0">Mạch ESP32 đọc thông số từ DHT22, MQ2 và module định vị GPS định kỳ 15 giây.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="instruction-step text-center">
+                                <div class="step-number">2</div>
+                                <i class="fa-solid fa-wifi fa-2x text-info mb-3 mt-2"></i>
+                                <h6 class="fw-bold">Gửi (Publish)</h6>
+                                <p class="text-muted small mb-0">ESP32 đẩy dữ liệu qua mạng WiFi lên MQTT Broker <code>broker.emqx.io</code> (Port 1883).</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="instruction-step text-center">
+                                <div class="step-number">3</div>
+                                <i class="fa-solid fa-satellite-dish fa-2x text-warning mb-3 mt-2"></i>
+                                <h6 class="fw-bold">Nhận (Subscribe)</h6>
+                                <p class="text-muted small mb-0">Trang Web mở kết nối WebSockets (Port 8084) để lắng nghe các Topic tương ứng (VD: <code>/temperature</code>).</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="instruction-step text-center">
+                                <div class="step-number">4</div>
+                                <i class="fa-solid fa-desktop fa-2x text-success mb-3 mt-2"></i>
+                                <h6 class="fw-bold">Cập Nhật & Điều Khiển</h6>
+                                <p class="text-muted small mb-0">JavaScript xử lý dữ liệu để cập nhật số liệu/bản đồ. Người dùng có thể bấm nút trên Web để gửi lệnh ngược lại ESP32.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fa-solid fa-book-journal-whills text-primary"></i> Tài Liệu: Danh Sách MQTT Topics
+                        </div>
+                        <span class="badge bg-light text-dark border">Tiền tố (Prefix): tuiot/freezer/</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Tên Topic</th>
+                                        <th>Chiều Truyền</th>
+                                        <th>Dữ Liệu (Payload)</th>
+                                        <th>Chức Năng & Ý Nghĩa</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">temperature</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>25.50</code> (Số thực)</td>
+                                        <td>Cập nhật nhiệt độ hiện tại từ cảm biến DHT22 (15s/lần).</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">humidity</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>60.20</code> (Số thực)</td>
+                                        <td>Cập nhật độ ẩm hiện tại từ cảm biến DHT22 (15s/lần).</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">gas</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>1</code> hoặc <code>0</code></td>
+                                        <td>Trạng thái rò rỉ khí gas từ cảm biến MQ2 (1 = Cảnh báo).</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">gps</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>10.82,106.62</code></td>
+                                        <td>Tọa độ Vĩ độ, Kinh độ lấy từ module GPS để vẽ lên bản đồ.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">fan_status</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>ON</code> hoặc <code>OFF</code></td>
+                                        <td>Báo cáo trạng thái đang hoạt động thực tế của Quạt.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-primary">alert</td>
+                                        <td><span class="badge bg-info text-dark"><i class="fa-solid fa-microchip"></i> ESP32 <i class="fa-solid fa-arrow-right"></i> Web <i class="fa-solid fa-globe"></i></span></td>
+                                        <td><code>Cảnh báo...</code></td>
+                                        <td>Gửi thông điệp khẩn cấp để hiển thị Popup (Swal) lên web.</td>
+                                    </tr>
+                                    
+                                    <tr class="table-group-divider">
+                                        <td class="ps-4 fw-bold text-success">fan_mode</td>
+                                        <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-globe"></i> Web <i class="fa-solid fa-arrow-right"></i> ESP32 <i class="fa-solid fa-microchip"></i></span></td>
+                                        <td><code>AUTO</code> / <code>MANUAL</code></td>
+                                        <td>Lệnh chuyển đổi chế độ hoạt động của Quạt.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-success">fan_ctrl</td>
+                                        <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-globe"></i> Web <i class="fa-solid fa-arrow-right"></i> ESP32 <i class="fa-solid fa-microchip"></i></span></td>
+                                        <td><code>ON</code> hoặc <code>OFF</code></td>
+                                        <td>Lệnh ép bật/tắt Quạt (Chỉ tác dụng khi ở chế độ MANUAL).</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-success">threshold</td>
+                                        <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-globe"></i> Web <i class="fa-solid fa-arrow-right"></i> ESP32 <i class="fa-solid fa-microchip"></i></span></td>
+                                        <td><code>22.5</code> (Số)</td>
+                                        <td>Lưu ngưỡng nhiệt độ báo động vào EEPROM của ESP32.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-success">phone</td>
+                                        <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-globe"></i> Web <i class="fa-solid fa-arrow-right"></i> ESP32 <i class="fa-solid fa-microchip"></i></span></td>
+                                        <td><code>+84...</code> (Chuỗi)</td>
+                                        <td>Cập nhật số điện thoại cảnh báo vào mạch để gọi bằng SIM.</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 fw-bold text-success">test_call</td>
+                                        <td><span class="badge bg-warning text-dark"><i class="fa-solid fa-globe"></i> Web <i class="fa-solid fa-arrow-right"></i> ESP32 <i class="fa-solid fa-microchip"></i></span></td>
+                                        <td><code>CALL</code></td>
+                                        <td>Lệnh yêu cầu mạch ESP32 thực hiện gọi điện test ngay lập tức.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
 
     <footer>
         <div class="container">
-            <p class="mb-0">©  Designed for Smart Freezer Monitoring.</p>
+            <p class="mb-0">© Designed for Smart Freezer Monitoring.</p>
         </div>
     </footer>
 
